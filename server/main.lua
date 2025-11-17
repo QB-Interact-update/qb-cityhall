@@ -194,13 +194,3 @@ QBCore.Commands.Add('drivinglicense', 'Give a drivers license to someone', { { '
         TriggerClientEvent('QBCore:Notify', source, Lang:t('error.player_not_online'), 'error')
     end
 end)
-
-
-RegisterCommand('YOUR_SERVER_COMMAND', function(source, args, rawCommand) -- The Command that should be used (Can be anything)
-    local chat = {
-        name = 'YOUR_SERVER_COMMAND',
-        help = {'id'}, -- The text that should be shown if someone uses the
-        description = {'ID OF PERSON'} -- RegisterCommand Command, like above, configure to your needs
-    }
-    TriggerClientEvent('chat:addSuggestions', -1, chat)
-end)  
