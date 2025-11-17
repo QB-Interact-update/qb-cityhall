@@ -1,35 +1,54 @@
 local Translations = {
     error = {
-        not_in_range = 'Zu weit vom Rathaus entfernt'
+        not_in_range = 'Zu weit vom Rathaus entfernt',
+        not_enough_money = 'Du hast nicht genug Geld',
+        already_added = 'Job wurde bereits hinzugefügt',
+        jobNotAvailable = 'Dieser Job ist in diesem Rathaus nicht verfügbar',
+        no_perms_driving_license = 'Du hast keine Berechtigung, einen Führerschein auszustellen',
+        player_not_online = 'Spieler ist nicht online',
     },
     success = {
-        recived_license = 'Du hast deinen %{value} für 50$ zurückbekommen'
+        recived_license = 'Du hast deine %{value} für $50 erhalten',
+        passed_driving_test = 'Du hast die Fahrprüfung bestanden! Du kannst deinen Führerschein jetzt im Rathaus abholen.',
+        granted_license = 'Spieler hat Zugang zu einem Führerschein erhalten',
     },
     info = {
-        new_job_app = 'Your application was sent to the boss of (%{job})',
-        bilp_text = 'Rathaus',
-        city_services_menu = '~g~E~w~ - Rathaus',
+        cityHall = {
+            header = 'Rathaus',
+            idHead = 'Ausweise',
+            idDesc = 'Hol dir deine Ausweise',
+            idsHead = 'Identitätskarten',
+            jobCenterHead = 'Jobcenter',
+            jobCenterDesc = 'Bewirb dich für einen Job',
+            apply_job = 'Für %{job} bewerben',
+        },
+        interactions = {
+            openCity = 'Rathaus öffnen',
+            openDriving = 'Für Fahrprüfung anmelden',
+        },
+        new_job_app = 'Deine Bewerbung wurde an den Chef von (%{job}) gesendet',
+        bilp_text = 'Städtische Dienste',
+        city_services_menu = '~g~E~w~ - Städtische Dienstemenü',
         id_card = 'Ausweis',
         driver_license = 'Führerschein',
         weaponlicense = 'Waffenschein',
-        new_job = 'Herzlichen Glückwunsch zu deinem neuen Job! (%{job})'
+        new_job = 'Glückwunsch zu deinem neuen Job! (%{job})',
+        driver_class = 'Führerschein Klasse C',
     },
     email = {
         jobAppSender = "%{job}",
-        jobAppSub = "Thank you for applying to %(job).",
-        jobAppMsg = "Hello %{gender} %{lastname}<br /><br />%{job} has received your application.<br /><br />The boss is looking into your request and will reach out to you for an interview at their earliest convienance.<br /><br />Once again, thank you for your application.",
-        mr = 'Sehr geehrter Herr',
-        mrs = 'Sehr geehrte Frau',
+        jobAppSub = "Vielen Dank für deine Bewerbung bei %{job}.",
+        jobAppMsg = "Hallo %{gender} %{lastname}<br /><br />%{job} hat deine Bewerbung erhalten.<br /><br />Der Chef prüft deine Anfrage und wird sich baldmöglichst für ein Vorstellungsgespräch bei dir melden.<br /><br />Nochmals vielen Dank für deine Bewerbung.",
+        mr = 'Herr',
+        mrs = 'Frau',
         sender = 'Gemeinde',
         subject = 'Anfrage für Fahrstunden',
-        message = '%{gender} %{lastname}<br /><br />Wir haben gerade eine Nachricht erhalten, dass jemand Fahrstunden nehmen möchte<br />Wenn Sie bereit sind zu unterrichten, nehmen Sie bitte Kontakt mit uns auf:<br />Name: <strong>%{firstname} %{lastname}</strong><br />Telefonnummer: <strong>%{phone}</strong><br/><br/>Mit freundlichen Grüßen<br />Gemeinde Los Santos'
+        message = "Hallo %{gender} %{lastname}<br /><br />Wir haben gerade eine Nachricht erhalten, dass jemand Fahrstunden nehmen möchte<br />Wenn du bereit bist zu unterrichten, kontaktiere uns bitte:<br />Name: <strong>%{firstname} %{lastname}</strong><br />Telefonnummer: <strong>%{phone}</strong><br/><br/>Mit freundlichen Grüßen,<br />Gemeinde Los Santos",
+        driving_school_await_contact = 'Eine E-Mail wurde an Fahrschulen gesendet, und du wirst kontaktiert, wenn sie verfügbar sind',
     }
 }
 
-if GetConvar('qb_locale', 'en') == 'de' then
-    Lang = Locale:new({
-        phrases = Translations,
-        warnOnMissing = true,
-        fallbackLang = Lang,
-    })
-end
+Lang = Lang or Locale:new({
+    phrases = Translations,
+    warnOnMissing = true
+})

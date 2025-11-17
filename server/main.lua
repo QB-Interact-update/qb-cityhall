@@ -1,10 +1,17 @@
-local QBCore = exports['qb-core']:GetCoreObject()
 local availableJobs = Config.AvailableJobs
 
 -- Exports
+local function checkDist(src, loc, dist)
+    local pedCoords = GetEntityCoords(GetPlayerPed(src))
+    local distance = #(pedCoords - vector3(loc.x, loc.y, loc.z))
+    if distance < dist then
+        return true
+    end
+    return false
+end
 
 local function AddCityJob(jobName, toCH)
-    if availableJobs[jobName] then return false, 'already added' end
+    if availableJobs[jobName] then return false, Lang:t('error.already_added') end
     availableJobs[jobName] = {
         ['label'] = toCH.label,
         ['isManaged'] = toCH.isManaged
@@ -32,7 +39,7 @@ local function giveStarterItems()
             info.firstname = Player.PlayerData.charinfo.firstname
             info.lastname = Player.PlayerData.charinfo.lastname
             info.birthdate = Player.PlayerData.charinfo.birthdate
-            info.type = 'Class C Driver License'
+            info.type = Lang:t('info.driver_class')
         end
         exports['qb-inventory']:AddItem(source, v.item, 1, false, info, 'qb-cityhall:giveStarterItems')
     end
@@ -44,11 +51,16 @@ QBCore.Functions.CreateCallback('qb-cityhall:server:receiveJobs', function(_, cb
     cb(availableJobs)
 end)
 
-QBCore.Functions.CreateCallback('qb-cityhall:server:getIdentityData', function(source, cb, hallId)
+
+QBCore.Functions.CreateCallback('qb-cityhall:server:getLicenses', function(source, cb, hallId)
     local Player = QBCore.Functions.GetPlayer(source)
     if not Player then return cb({}) end
 
     local licensesMeta = Player.PlayerData.metadata['licences']
+    if not checkDist(source, Config.Cityhalls[hallId].coords, 5.0) then
+        return cb({})
+    end
+
     local availableLicenses = {}
 
     for license, data in pairs(Config.Cityhalls[hallId].licenses) do
@@ -56,18 +68,24 @@ QBCore.Functions.CreateCallback('qb-cityhall:server:getIdentityData', function(s
             availableLicenses[license] = data
         end
     end
-
     cb(availableLicenses)
 end)
-
 -- Events
 
 RegisterNetEvent('qb-cityhall:server:requestId', function(item, hall)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
+
+    if not checkDist(src, Config.Cityhalls[hall].coords, 5.0) then
+        return
+    end
+
     local itemInfo = Config.Cityhalls[hall].licenses[item]
-    if not Player.Functions.RemoveMoney('cash', itemInfo.cost, 'cityhall id') then return TriggerClientEvent('QBCore:Notify', src, ('You don\'t have enough money on you, you need %s cash'):format(itemInfo.cost), 'error') end
+    if not Player.Functions.RemoveMoney('cash', itemInfo.cost, 'cityhall id') then
+        return TriggerClientEvent('QBCore:Notify', src, Lang:t('error.not_enough_money'), 'error')
+    end
+
     local info = {}
     if item == 'id_card' then
         info.citizenid = Player.PlayerData.citizenid
@@ -80,7 +98,7 @@ RegisterNetEvent('qb-cityhall:server:requestId', function(item, hall)
         info.firstname = Player.PlayerData.charinfo.firstname
         info.lastname = Player.PlayerData.charinfo.lastname
         info.birthdate = Player.PlayerData.charinfo.birthdate
-        info.type = 'Class C Driver License'
+        info.type = Lang:t('info.driver_class')
     elseif item == 'weaponlicense' then
         info.firstname = Player.PlayerData.charinfo.firstname
         info.lastname = Player.PlayerData.charinfo.lastname
@@ -92,45 +110,57 @@ RegisterNetEvent('qb-cityhall:server:requestId', function(item, hall)
     TriggerClientEvent('qb-inventory:client:ItemBox', src, QBCore.Shared.Items[item], 'add')
 end)
 
-RegisterNetEvent('qb-cityhall:server:sendDriverTest', function(instructors)
+RegisterNetEvent('qb-cityhall:server:sendDriverTest', function(instructors, location)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
+    if not checkDist(src, Config.DrivingSchools[location].coords, 5.0) then
+        return
+    end
     for i = 1, #instructors do
         local citizenid = instructors[i]
-        local SchoolPlayer = QBCore.Functions.GetPlayerByCitizenId(citizenid)
-        if SchoolPlayer then
+        local SchoolPlayer = QBCore.Functions.GetPlayerByCitizenId(citizenid) or QBCore.Functions.GetOfflinePlayer(citizenid)
+        local gender
+        if SchoolPlayer.PlayerData.charinfo.gender == '0' then
+            gender = Lang:t('email.mr')
+        else
+            gender = Lang:t('email.mrs')
+        end
+        if SchoolPlayer.PlayerData.source then
             TriggerClientEvent('qb-cityhall:client:sendDriverEmail', SchoolPlayer.PlayerData.source, Player.PlayerData.charinfo)
         else
             local mailData = {
-                sender = 'Township',
-                subject = 'Driving lessons request',
-                message = 'Hello,<br><br>We have just received a message that someone wants to take driving lessons.<br>If you are willing to teach, please contact them:<br>Name: <strong>' .. Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname .. '<br />Phone Number: <strong>' .. Player.PlayerData.charinfo.phone .. '</strong><br><br>Kind regards,<br>Township Los Santos',
+                sender = Lang:t('email.sender'),
+                subject = Lang:t('email.subject'),
+                message = Lang:t('email.message', {
+                    gender = gender,
+                    lastname = Player.PlayerData.charinfo.lastname,
+                    firstname = Player.PlayerData.charinfo.firstname,
+                    phone = Player.PlayerData.charinfo.phone
+                }),
                 button = {}
             }
             exports['qb-phone']:sendNewMailToOffline(citizenid, mailData)
         end
     end
-    TriggerClientEvent('QBCore:Notify', src, 'An email has been sent to driving schools, and you will be contacted automatically', 'success', 5000)
+    TriggerClientEvent('QBCore:Notify', src, Lang:t('info.driving_school_await_contact'), 'success', 5000)
 end)
 
-RegisterNetEvent('qb-cityhall:server:ApplyJob', function(job, cityhallCoords)
+RegisterNetEvent('qb-cityhall:server:ApplyJob', function(job, location)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
-    local ped = GetPlayerPed(src)
-    local pedCoords = GetEntityCoords(ped)
 
-    local data = {
-        ['src'] = src,
-        ['job'] = job
-    }
-    if #(pedCoords - cityhallCoords) >= 20.0 or not availableJobs[job] then
-        return false
+    if not checkDist(src, Config.Cityhalls[location].coords, 5.0) then
+        return
     end
+    if not availableJobs[job] then
+        return TriggerClientEvent('QBCore:Notify', src, Lang:t('error.jobNotAvailable'), 'error')
+    end
+
     local JobInfo = QBCore.Shared.Jobs[job]
-    Player.Functions.SetJob(data.job)
-    TriggerClientEvent('QBCore:Notify', data.src, Lang:t('info.new_job', { job = JobInfo.label }))
+    Player.Functions.SetJob(job)
+    TriggerClientEvent('QBCore:Notify', src, Lang:t('info.new_job', { job = JobInfo.label }))
 end)
 
 RegisterNetEvent('qb-cityhall:server:getIDs', giveStarterItems)
@@ -151,16 +181,26 @@ QBCore.Commands.Add('drivinglicense', 'Give a drivers license to someone', { { '
                     if Config.DrivingSchools[i].instructors[id] == Player.PlayerData.citizenid then
                         SearchedPlayer.PlayerData.metadata['licences']['driver'] = true
                         SearchedPlayer.Functions.SetMetaData('licences', SearchedPlayer.PlayerData.metadata['licences'])
-                        TriggerClientEvent('QBCore:Notify', SearchedPlayer.PlayerData.source, 'You have passed! Pick up your drivers license at the town hall', 'success', 5000)
-                        TriggerClientEvent('QBCore:Notify', source, ('Player with ID %s has been granted access to a driving license'):format(SearchedPlayer.PlayerData.source), 'success', 5000)
+                        TriggerClientEvent('QBCore:Notify', SearchedPlayer.PlayerData.source, Lang:t('success.passed_driving_test'), 'success', 5000)
+                        TriggerClientEvent('QBCore:Notify', source, Lang:t('success.granted_license'), 'success', 5000)
                         break
                     end
                 end
             end
         else
-            TriggerClientEvent('QBCore:Notify', source, "Can't give permission for a drivers license, this person already has permission", 'error')
+            TriggerClientEvent('QBCore:Notify', source, Lang:t('error.no_perms_driving_license'), 'error')
         end
     else
-        TriggerClientEvent('QBCore:Notify', source, 'Player Not Online', 'error')
+        TriggerClientEvent('QBCore:Notify', source, Lang:t('error.player_not_online'), 'error')
     end
 end)
+
+
+RegisterCommand('YOUR_SERVER_COMMAND', function(source, args, rawCommand) -- The Command that should be used (Can be anything)
+    local chat = {
+        name = 'YOUR_SERVER_COMMAND',
+        help = {'id'}, -- The text that should be shown if someone uses the
+        description = {'ID OF PERSON'} -- RegisterCommand Command, like above, configure to your needs
+    }
+    TriggerClientEvent('chat:addSuggestions', -1, chat)
+end)  
