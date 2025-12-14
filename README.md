@@ -1,60 +1,165 @@
-# qb-cityhall
-City Services for QB-Core Framework
+<div align="center">
+    <img href="https://projecterror.dev" width="150" src="https://i.tasoagc.dev/c1pD" alt="Material-UI logo" />
+</div>
+<h1 align="center">Svelte & Lua Boilerplate</h1>
 
-## Dependencies
-- [qb-core](https://github.com/qbcore-framework/qb-core)
-- [PolyZone](https://github.com/mkafrin/PolyZone) - For Interaction (DrawText and qb-target both require this)
-- [qb-target](https://github.com/BerkieBb/qb-target) - For Interaction (Optional)
-- [qb-phone](https://github.com/qbcore-framework/qb-phone) - For E-Mail
+This repository is a basic boilerplate for getting started
+with Svelte in NUI. It can be used for both in browser and
+in game development.
+
+Utilizing `Vite` allows us to have hot builds while developing in game
+by restarting the resource, instead of having to make a production build.
+
+This version of the boilerplate is meant for the CfxLua runtime.
+
+## Requirements
+* [Node > v10.6](https://nodejs.org/en/)
+* [pnpm](https://pnpm.io/installation) (Highly recommended over yarn or npm)
+
+*A basic understanding of the modern web development workflow. If you don't 
+know this yet, Svelte might not be for you just yet.*
+
+## Getting Started
+
+First clone the repository or use the template option and place
+it within your `resources` folder
+
+### Installation
+
+Install dependencies by navigating to the `web` folder within
+a terminal of your choice and type `pnpm i`.
 
 ## Features
-- Ability to request birth certificate when lost
-- Ability to request driver license when granted by a driving instructor
-- Ability to request weapon license when granted it by the police
-- Ability to apply to government jobs
-- Ability to add multiple cityhall locations
-- Ability to add nultiple driving school locations
-- Ability to take driving lessons
-- qb-target integration, this is optional
-- PolyZone and qb-core DrawText integration, this is optional
 
-## Installation
-### Manual
-- Download the script and put it in the `[qb]` directory.
-- Add the following code to your server.cfg/resources.cfg
+This boilerplate comes with some utilities and examples to work off of.
+
+### Svelte Utils
+
+Signatures are not included for these utilities as the type definitions
+are sufficient enough.
+
+**Toggling main frame visibility**
+
+You can exit the UI frame using the `ESC` key, if you need to forcefully
+hide it you can use `visibility.set()`, visibility being an exported writable
+from the Svelte store.
+
+Before being able to use the writable you must first import it from `store/stores.ts`
+```svelte
+<button on:click={() => visibility.set(false)}>
+  Exit
+</button>
 ```
-ensure qb-core
-ensure qb-target # Optional
-ensure qb-phone
-ensure qb-cityhall
+
+**useNuiEvent**
+
+This is a custom function that is designed to intercept and handle
+messages dispatched by the game scripts. This is the primary
+way of creating passive listeners.
+
+
+*Note: For now handlers can only be registered a single time. I haven't
+come across a personal usecase for a cascading event system*
+
+**Usage**
+```svelte
+<script lang="ts">
+  let characterName: string;
+  
+  useNuiEvent<string>('myAction', (data) => {
+    // the first argument to the handler function
+    // is the data argument sent using SendNUIMessage
+    
+    // do whatever logic u want here
+    characterName = data;
+  })
+</script>
+
+<div>{characterName}</div>
 ```
 
-## Screenshots
-![City Services](https://i.imgur.com/l6ZRlXP.png)
-![Request Birth Certificate](https://i.imgur.com/zJRiuDI.png)
-![Request Driver License](https://i.imgur.com/2scxBew.png)
-![Request Weapon License](https://i.imgur.com/pSudfVl.png)
-![Apply For a Job](https://i.imgur.com/26Kd0FU.png)
-![Cityhall DrawText Interaction](https://i.imgur.com/Uxh2GZC.png)
-![Cityhall QB-Target Interaction](https://i.imgur.com/K54cMLt.png)
-![Driving School Sending And Receiving Mail](https://i.imgur.com/iJof4jI.png)
-![Driving School DrawText Interaction](https://i.imgur.com/32BPp8f.png)
-![Driving School QB-Target Interaction](https://i.imgur.com/P7jWBsV.png)
+**fetchNui**
 
-# License
+This is a simple NUI focused wrapper around the standard `fetch` API.
+This is the main way to accomplish active NUI data fetching 
+or to trigger NUI callbacks in the game scripts.
 
-    QBCore Framework
-    Copyright (C) 2021 Joshua Eger
+When using this, you must always at least callback using `{}`
+in the gamescripts.
 
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+*This can be heavily customized to your use case*
 
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+**Usage**
+```svelte
+<script lang="ts">
+  let clientCoords: {x: number; y: number; z: number};
 
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>
+  fetchNui<{x: number; y: number; z: number}>('getClientData').then(retData => {
+    console.log('Got return data from client scripts:', retData);
+    clientCoords = retData
+  }).catch(e => {
+    console.log('Setting mock data due to error', e)
+    clientCoords = {x: 500, y: 300: z: 200}
+  })
+</script>
+
+<div>{clientCoords}</div>
+```
+
+**debugData**
+
+This is a function allowing for mocking dispatched game script
+actions in a browser environment. It will trigger `useNuiEvent` handlers
+as if they were dispatched by the game scripts. **It will only fire if the current
+environment is a regular browser and not CEF**
+
+**Usage**
+```ts
+// This will target the useNuiEvent function registered with `setVisible`
+// and pass them the data of `true`
+<script lang="ts">
+  debugData([
+    {
+      action: 'setVisible',
+      data: true,
+    }
+  ])
+<script
+```
+
+**Misc Utils**
+
+These are small but useful included utilities.
+
+* `isEnvBrowser()` - Will return a boolean indicating if the current 
+  environment is a regular browser. (Useful for logic in development)
+
+## Development Workflow
+
+
+**Hot builds**
+When developing in-game you can use the hot build system by running
+the `dev:game` script. This will write changes to disk meaning all
+that is required is a resource restart to update the game script.
+
+For development in browser you can just run `dev` instead.
+
+**Usage**
+```sh
+pnpm dev
+```
+
+**Production Builds**
+
+When you are done with development phase for your resource. You
+must create a production build that is optimized and minimized.
+
+You can do this by running the following:
+
+```sh
+pnpm build
+```
+
+## Additional Notes
+
+Need further support? Join our [Discord](https://discord.com/invite/HYwBjTbAY5)!

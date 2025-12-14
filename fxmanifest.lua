@@ -1,22 +1,18 @@
 fx_version 'cerulean'
-game 'gta5'
+
+games {"gta5", "rdr3"}
+
+author "Project Error"
+version '1.0.0'
+
 lua54 'yes'
-use_fxv2_oal 'yes'
-author 'Kakarot'
-description 'Allows players to purchase id cards and licenses or change their job'
-version '2.2.0'
 
-shared_scripts {
-    '@qb-core/shared/locale.lua',
-    'locales/en.lua',
-    'locales/*.lua',
-    'config.lua'
-}
+ui_page 'web/build/index.html'
 
-server_script 'server/main.lua'
-
-client_scripts {
-    '@PolyZone/client.lua',
-    '@PolyZone/BoxZone.lua',
-    'client/main.lua'
+client_script "client/**/*"
+server_script "server/**/*"
+shared_script "Config.lua"
+files {
+  'web/build/index.html',
+  'web/build/**/*'
 }
